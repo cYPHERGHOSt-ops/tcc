@@ -1,0 +1,73 @@
+import 'package:flutter/material.dart';
+
+import '../models/pergunta.dart';
+import '../screens/perguntas/pergunta_detalhes_screen.dart';
+
+class PerguntaCard extends StatelessWidget {
+  final Pergunta pergunta;
+  final int usuarioAtualId;
+
+  const PerguntaCard({
+    super.key,
+    required this.pergunta,
+    required this.usuarioAtualId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                return PerguntaDetalhesScreen(
+                  pergunta: pergunta,
+                  usuarioAtualId: usuarioAtualId,
+                );
+              },
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                pergunta.titulo,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                pergunta.descricao,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  const Icon(Icons.chat_bubble_outline, size: 18),
+
+                  const SizedBox(width: 6),
+
+                  const Text('Responder'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
