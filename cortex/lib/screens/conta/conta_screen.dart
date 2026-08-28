@@ -18,6 +18,12 @@ class _ContaScreenState extends State<ContaScreen> {
   Usuario? _usuario;
   bool _carregando = true;
 
+  static const Color _azul = Color(0xFF1677FF);
+  static const Color _fundo = Color(0xFF000000);
+  static const Color _card = Color(0xFF111111);
+  static const Color _borda = Color(0xFF242424);
+  static const Color _textoSecundario = Color(0xFF8A8A8A);
+
   @override
   void initState() {
     super.initState();
@@ -25,37 +31,70 @@ class _ContaScreenState extends State<ContaScreen> {
     _carregarUsuario();
   }
 
+  // ============================================================
+  // CARREGAR USUÁRIO
+  // ============================================================
+
   Future<void> _carregarUsuario() async {
-    final usuario = await _authRepository.usuarioLogado();
+    try {
+      final usuario = await _authRepository.usuarioLogado();
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _usuario = usuario;
+        _carregando = false;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _carregando = false;
+      });
     }
-
-    setState(() {
-      _usuario = usuario;
-      _carregando = false;
-    });
   }
+
+  // ============================================================
+  // LOGOUT
+  // ============================================================
 
   Future<void> _logout() async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Sair da conta'),
-          content: const Text('Tem certeza que deseja sair da sua conta?'),
+          backgroundColor: _card,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Sair da conta',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'Tem certeza que deseja sair da sua conta?',
+            style: TextStyle(color: _textoSecundario),
+          ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context, false);
               },
-              child: const Text('Cancelar'),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: _textoSecundario),
+              ),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.pop(context, true);
               },
+              style: FilledButton.styleFrom(backgroundColor: _azul),
               child: const Text('Sair'),
             ),
           ],
@@ -76,35 +115,53 @@ class _ContaScreenState extends State<ContaScreen> {
     widget.onLogout();
   }
 
+  // ============================================================
+  // BUILD
+  // ============================================================
+
   @override
   Widget build(BuildContext context) {
     if (_carregando) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        backgroundColor: _fundo,
+        body: Center(child: CircularProgressIndicator(color: _azul)),
+      );
     }
 
     if (_usuario == null) {
       return const Scaffold(
-        body: Center(child: Text('Nenhum usuário conectado.')),
+        backgroundColor: _fundo,
+        body: Center(
+          child: Text(
+            'Nenhum usuário conectado.',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
       );
     }
 
     return Scaffold(
+      backgroundColor: _fundo,
       appBar: AppBar(
+        backgroundColor: _fundo,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         title: const Text(
           'Minha conta',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
         children: [
           _buildCabecalho(),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
           _buildInformacoes(),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 16),
 
           _buildPerguntasSalvas(),
 
@@ -116,6 +173,10 @@ class _ContaScreenState extends State<ContaScreen> {
     );
   }
 
+  // ============================================================
+  // CABEÇALHO
+  // ============================================================
+
   Widget _buildCabecalho() {
     final nome = _usuario!.nome;
 
@@ -123,87 +184,127 @@ class _ContaScreenState extends State<ContaScreen> {
 
     return Column(
       children: [
-        CircleAvatar(
-          radius: 48,
-          child: Text(
-            inicial,
-            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+        // AVATAR
+        Container(
+          width: 94,
+          height: 94,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _azul.withOpacity(0.12),
+            border: Border.all(color: _azul.withOpacity(0.35), width: 2),
+          ),
+          child: Center(
+            child: Text(
+              inicial,
+              style: const TextStyle(
+                color: _azul,
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
 
         const SizedBox(height: 16),
 
+        // NOME
         Text(
           _usuario!.nome,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
         ),
 
-        const SizedBox(height: 4),
+        const SizedBox(height: 5),
 
+        // USUÁRIO
         Text(
           '@${_usuario!.email.split('@').first}',
-          style: TextStyle(
-            fontSize: 15,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          style: const TextStyle(color: _textoSecundario, fontSize: 14),
         ),
 
         const SizedBox(height: 16),
 
+        // EDITAR
         OutlinedButton.icon(
           onPressed: () {
-            // Vamos implementar a edição do perfil depois.
+            // Implementaremos a edição do perfil depois.
           },
-          icon: const Icon(Icons.edit_outlined),
+          icon: const Icon(Icons.edit_outlined, size: 18),
           label: const Text('Editar perfil'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.white,
+            side: const BorderSide(color: _borda),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildInformacoes() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Informações',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+  // ============================================================
+  // INFORMAÇÕES
+  // ============================================================
 
+  Widget _buildInformacoes() {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _borda),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Informações',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          _buildInfoItem(
+            icon: Icons.person_outline,
+            titulo: 'Nome',
+            valor: _usuario!.nome,
+          ),
+
+          const SizedBox(height: 18),
+
+          _buildInfoItem(
+            icon: Icons.email_outlined,
+            titulo: 'E-mail',
+            valor: _usuario!.email,
+          ),
+
+          if (_usuario!.bio != null && _usuario!.bio!.trim().isNotEmpty) ...[
             const SizedBox(height: 18),
 
             _buildInfoItem(
-              icon: Icons.person_outline,
-              titulo: 'Nome',
-              valor: _usuario!.nome,
+              icon: Icons.description_outlined,
+              titulo: 'Bio',
+              valor: _usuario!.bio!,
             ),
-
-            const SizedBox(height: 16),
-
-            _buildInfoItem(
-              icon: Icons.email_outlined,
-              titulo: 'E-mail',
-              valor: _usuario!.email,
-            ),
-
-            if (_usuario!.bio != null && _usuario!.bio!.trim().isNotEmpty) ...[
-              const SizedBox(height: 16),
-
-              _buildInfoItem(
-                icon: Icons.description_outlined,
-                titulo: 'Bio',
-                valor: _usuario!.bio!,
-              ),
-            ],
           ],
-        ),
+        ],
       ),
     );
   }
+
+  // ============================================================
+  // ITEM DE INFORMAÇÃO
+  // ============================================================
 
   Widget _buildInfoItem({
     required IconData icon,
@@ -213,9 +314,17 @@ class _ContaScreenState extends State<ContaScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _azul.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: _azul, size: 21),
+        ),
 
-        const SizedBox(width: 14),
+        const SizedBox(width: 13),
 
         Expanded(
           child: Column(
@@ -223,15 +332,19 @@ class _ContaScreenState extends State<ContaScreen> {
             children: [
               Text(
                 titulo,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                style: const TextStyle(color: _textoSecundario, fontSize: 12),
               ),
 
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
 
-              Text(valor, style: const TextStyle(fontSize: 16)),
+              Text(
+                valor,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
@@ -239,41 +352,67 @@ class _ContaScreenState extends State<ContaScreen> {
     );
   }
 
+  // ============================================================
+  // PERGUNTAS SALVAS
+  // ============================================================
+
   Widget _buildPerguntasSalvas() {
-    return Card(
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         onTap: () {
-          // Vamos criar essa tela depois.
+          // Tela de perguntas salvas será implementada aqui.
         },
-        child: const Padding(
-          padding: EdgeInsets.all(18),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: _card,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _borda),
+          ),
           child: Row(
             children: [
-              Icon(Icons.bookmark_outline, size: 28),
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: _azul.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.bookmark_outline,
+                  color: _azul,
+                  size: 24,
+                ),
+              ),
 
-              SizedBox(width: 16),
+              const SizedBox(width: 14),
 
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Perguntas salvas',
                       style: TextStyle(
-                        fontSize: 17,
+                        color: Colors.white,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
 
                     SizedBox(height: 4),
 
-                    Text('Veja as perguntas que você salvou.'),
+                    Text(
+                      'Veja as perguntas que você salvou.',
+                      style: TextStyle(color: _textoSecundario, fontSize: 13),
+                    ),
                   ],
                 ),
               ),
 
-              Icon(Icons.chevron_right),
+              const Icon(Icons.chevron_right, color: _textoSecundario),
             ],
           ),
         ),
@@ -281,13 +420,20 @@ class _ContaScreenState extends State<ContaScreen> {
     );
   }
 
+  // ============================================================
+  // LOGOUT
+  // ============================================================
+
   Widget _buildLogoutButton() {
     return OutlinedButton.icon(
       onPressed: _logout,
-      icon: const Icon(Icons.logout),
+      icon: const Icon(Icons.logout, size: 19),
       label: const Text('Sair da conta'),
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 50),
+        foregroundColor: const Color(0xFFFF5C5C),
+        side: BorderSide(color: const Color(0xFFFF5C5C).withOpacity(0.35)),
+        minimumSize: const Size(double.infinity, 52),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       ),
     );
   }

@@ -42,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Scaffold(
+      backgroundColor: const Color(0xFF000000),
       body: screens[_currentIndex],
       bottomNavigationBar: CortexBottomNavigation(
         currentIndex: _currentIndex,
@@ -70,6 +71,25 @@ class _FeedContentState extends State<FeedContent> {
   Usuario? _usuario;
 
   bool _carregando = true;
+
+  // ============================================================
+  // CORES DO CORTEX
+  // ============================================================
+
+  static const Color _fundo = Color(0xFF000000);
+  static const Color _fundoCard = Color(0xFF111111);
+  static const Color _fundoCardSecundario = Color(0xFF181818);
+
+  static const Color _azul = Color(0xFF1D9BF0);
+  static const Color _azulClaro = Color(0xFF4DB3F5);
+
+  static const Color _textoPrincipal = Color(0xFFF5F5F5);
+  static const Color _textoSecundario = Color(0xFF8E8E93);
+  static const Color _divisor = Color(0xFF262626);
+
+  // ============================================================
+  // INIT
+  // ============================================================
 
   @override
   void initState() {
@@ -207,8 +227,6 @@ class _FeedContentState extends State<FeedContent> {
         }
       });
 
-      // Recarrega do SharedPreferences para garantir
-      // que a interface esteja sincronizada com os dados salvos.
       await _carregarPerguntas();
     }
   }
@@ -223,7 +241,18 @@ class _FeedContentState extends State<FeedContent> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(
+          mensagem,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        backgroundColor: const Color(0xFF202020),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
     );
   }
 
@@ -234,16 +263,55 @@ class _FeedContentState extends State<FeedContent> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _fundo,
+
+      // ========================================================
+      // APP BAR
+      // ========================================================
       appBar: AppBar(
+        backgroundColor: _fundo,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+
+        centerTitle: true,
+
         title: const Text(
           'Cortex',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: _textoPrincipal,
+            fontSize: 21,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
+        ),
+
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: _divisor),
         ),
       ),
+
       body: _buildBody(),
-      floatingActionButton: FloatingActionButton(
+
+      // ========================================================
+      // BOTÃO NOVA PERGUNTA
+      // ========================================================
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirNovaPergunta,
-        child: const Icon(Icons.add),
+
+        backgroundColor: _azul,
+        foregroundColor: Colors.white,
+
+        elevation: 8,
+
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+
+        icon: const Icon(Icons.add, size: 24),
+
+        label: const Text(
+          'Perguntar',
+          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
       ),
     );
   }
@@ -254,41 +322,96 @@ class _FeedContentState extends State<FeedContent> {
 
   Widget _buildBody() {
     if (_usuario == null || _carregando) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(color: _azul, strokeWidth: 2.5),
+      );
     }
 
     if (_perguntas.isEmpty) {
       return RefreshIndicator(
+        color: _azul,
+        backgroundColor: _fundoCard,
         onRefresh: _carregarPerguntas,
+
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
+
           children: const [
-            SizedBox(height: 250),
+            SizedBox(height: 170),
+
+            Icon(Icons.forum_outlined, color: _azul, size: 52),
+
+            SizedBox(height: 20),
+
             Center(
               child: Text(
-                'Nenhuma pergunta ainda.',
-                style: TextStyle(fontSize: 16),
+                'Nenhuma pergunta ainda',
+                style: TextStyle(
+                  color: _textoPrincipal,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+
+            SizedBox(height: 8),
+
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Seja o primeiro a iniciar uma conversa.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: _textoSecundario, fontSize: 14),
+              ),
+            ),
+
+            SizedBox(height: 120),
           ],
         ),
       );
     }
 
     return RefreshIndicator(
+      color: _azul,
+      backgroundColor: _fundoCard,
+
       onRefresh: _carregarPerguntas,
+
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.only(top: 0, bottom: 100),
+
         physics: const AlwaysScrollableScrollPhysics(),
+
         itemCount: _perguntas.length,
+
         itemBuilder: (context, index) {
           final pergunta = _perguntas[index];
 
-          return PerguntaCard(
-            pergunta: pergunta,
-            onTap: () => _abrirPergunta(pergunta),
-          );
+          return _buildPerguntaItem(pergunta);
         },
+      ),
+    );
+  }
+
+  // ============================================================
+  // ITEM DO FEED
+  // ============================================================
+
+  Widget _buildPerguntaItem(Pergunta pergunta) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: _fundoCard,
+        border: Border(bottom: BorderSide(color: _divisor, width: 0.8)),
+      ),
+
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+
+        child: PerguntaCard(
+          pergunta: pergunta,
+          usuario: _usuario!,
+          onTap: () => _abrirPergunta(pergunta),
+        ),
       ),
     );
   }

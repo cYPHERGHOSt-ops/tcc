@@ -27,7 +27,6 @@ class AuthRepository {
     final usuario = Usuario(id: novoId, nome: nome, email: email, senha: senha);
 
     await _storage.salvarUsuario(usuario);
-
     await _storage.salvarSessao(usuario);
 
     return true;
@@ -52,6 +51,32 @@ class AuthRepository {
   Future<Usuario?> usuarioLogado() async {
     return await _storage.usuarioLogado();
   }
+
+  // ============================================================
+  // BUSCAR USUÁRIO PELO ID
+  // ============================================================
+
+  Future<Usuario?> buscarPorId(int id) async {
+    final usuarios = await _storage.listarUsuarios();
+
+    try {
+      return usuarios.firstWhere((usuario) => usuario.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ============================================================
+  // LISTAR USUÁRIOS
+  // ============================================================
+
+  Future<List<Usuario>> listarUsuarios() async {
+    return await _storage.listarUsuarios();
+  }
+
+  // ============================================================
+  // LOGOUT
+  // ============================================================
 
   Future<void> logout() async {
     await _storage.logout();

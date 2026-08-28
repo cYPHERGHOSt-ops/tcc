@@ -23,7 +23,6 @@ class PerguntaDetalhesScreen extends StatefulWidget {
 class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   final PerguntaRepository _perguntaRepository = PerguntaRepository();
   final RespostaRepository _respostaRepository = RespostaRepository();
-
   final TextEditingController _respostaController = TextEditingController();
 
   List<Resposta> _respostas = [];
@@ -31,6 +30,18 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   bool _carregando = true;
   bool _enviandoResposta = false;
   bool _excluindo = false;
+
+  // ============================================================
+  // CORES
+  // ============================================================
+
+  static const Color _fundo = Color(0xFF000000);
+  static const Color _card = Color(0xFF16181C);
+  static const Color _cardMaisEscuro = Color(0xFF101214);
+  static const Color _borda = Color(0xFF2F3336);
+  static const Color _azul = Color(0xFF1D9BF0);
+  static const Color _texto = Color(0xFFE7E9EA);
+  static const Color _textoSecundario = Color(0xFF71767B);
 
   bool get _ehDono {
     return widget.pergunta.userId == widget.usuarioAtualId;
@@ -61,25 +72,20 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
           _carregando = false;
         });
       }
-
       return;
     }
 
     try {
       final respostas = await _respostaRepository.listarPorPergunta(perguntaId);
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _respostas = respostas;
         _carregando = false;
       });
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _carregando = false;
@@ -98,15 +104,12 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
 
     if (texto.isEmpty) {
       _mostrarMensagem('Digite uma resposta antes de enviar.');
-
       return;
     }
 
     final perguntaId = widget.pergunta.id;
 
-    if (perguntaId == null) {
-      return;
-    }
+    if (perguntaId == null) return;
 
     setState(() {
       _enviandoResposta = true;
@@ -143,9 +146,7 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   // ============================================================
 
   Future<void> _editar() async {
-    if (!_ehDono) {
-      return;
-    }
+    if (!_ehDono) return;
 
     final resultado = await Navigator.push<Pergunta>(
       context,
@@ -156,9 +157,7 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
       ),
     );
 
-    if (!mounted || resultado == null) {
-      return;
-    }
+    if (!mounted || resultado == null) return;
 
     Navigator.pop(context, resultado);
   }
@@ -168,28 +167,38 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   // ============================================================
 
   Future<void> _excluir() async {
-    if (!_ehDono || _excluindo) {
-      return;
-    }
+    if (!_ehDono || _excluindo) return;
 
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          icon: const Icon(Icons.delete_outline, size: 42),
-          title: const Text('Excluir pergunta?'),
+          backgroundColor: _card,
+          surfaceTintColor: Colors.transparent,
+          title: const Text(
+            'Excluir pergunta?',
+            style: TextStyle(color: _texto),
+          ),
           content: const Text(
             'Essa pergunta será removida do Cortex. '
             'Essa ação não poderá ser desfeita.',
+            style: TextStyle(color: _textoSecundario),
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context, false);
               },
-              child: const Text('Cancelar'),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(color: _textoSecundario),
+              ),
             ),
             FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+              ),
               onPressed: () {
                 Navigator.pop(context, true);
               },
@@ -201,15 +210,11 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
       },
     );
 
-    if (confirmar != true) {
-      return;
-    }
+    if (confirmar != true) return;
 
     final perguntaId = widget.pergunta.id;
 
-    if (perguntaId == null) {
-      return;
-    }
+    if (perguntaId == null) return;
 
     setState(() {
       _excluindo = true;
@@ -218,15 +223,11 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
     try {
       await _perguntaRepository.excluir(perguntaId);
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       Navigator.pop(context, true);
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setState(() {
         _excluindo = false;
@@ -241,8 +242,14 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   // ============================================================
 
   void _mostrarMensagem(String mensagem) {
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+      SnackBar(
+        content: Text(mensagem),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: _card,
+      ),
     );
   }
 
@@ -252,22 +259,26 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: tema.colorScheme.surface,
+      backgroundColor: _fundo,
 
       appBar: AppBar(
+        backgroundColor: _fundo,
+        foregroundColor: _texto,
+        elevation: 0,
         title: const Text(
           'Pergunta',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: _texto),
         ),
       ),
 
       body: RefreshIndicator(
+        color: _azul,
+        backgroundColor: _card,
         onRefresh: _carregarRespostas,
         child: ListView(
-          padding: const EdgeInsets.only(top: 12, bottom: 40),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(top: 8, bottom: 40),
           children: [
             _buildPergunta(),
 
@@ -297,30 +308,29 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   // ============================================================
 
   Widget _buildPergunta() {
-    final tema = Theme.of(context);
-    final corPrincipal = tema.colorScheme.primary;
-
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 12),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: tema.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: tema.colorScheme.outlineVariant),
+        color: _card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borda),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ------------------------------------------------------
           // AUTOR
-          // ------------------------------------------------------
 
           Row(
             children: [
-              CircleAvatar(
-                radius: 23,
-                backgroundColor: corPrincipal.withOpacity(0.12),
-                child: Icon(Icons.person_outline, color: corPrincipal),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _azul.withOpacity(0.15),
+                ),
+                child: const Icon(Icons.person_outline, color: _azul),
               ),
 
               const SizedBox(width: 12),
@@ -330,8 +340,9 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Usuário #${widget.pergunta.userId}',
+                      _ehDono ? 'Você' : 'Usuário #${widget.pergunta.userId}',
                       style: const TextStyle(
+                        color: _texto,
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -343,8 +354,8 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
                       _ehDono
                           ? 'Você publicou esta pergunta'
                           : 'Pergunta da comunidade',
-                      style: TextStyle(
-                        color: tema.colorScheme.onSurfaceVariant,
+                      style: const TextStyle(
+                        color: _textoSecundario,
                         fontSize: 13,
                       ),
                     ),
@@ -356,16 +367,16 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 6,
+                    vertical: 5,
                   ),
                   decoration: BoxDecoration(
-                    color: corPrincipal.withOpacity(0.10),
+                    color: _azul.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Você',
                     style: TextStyle(
-                      color: corPrincipal,
+                      color: _azul,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -376,13 +387,12 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
 
           const SizedBox(height: 24),
 
-          // ------------------------------------------------------
           // TÍTULO
-          // ------------------------------------------------------
           Text(
             widget.pergunta.titulo,
             style: const TextStyle(
-              fontSize: 25,
+              color: _texto,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               height: 1.2,
             ),
@@ -390,29 +400,21 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
 
           const SizedBox(height: 14),
 
-          // ------------------------------------------------------
           // DESCRIÇÃO
-          // ------------------------------------------------------
           Text(
             widget.pergunta.descricao,
-            style: TextStyle(
-              fontSize: 16,
-              height: 1.6,
-              color: tema.colorScheme.onSurface,
-            ),
+            style: const TextStyle(color: _texto, fontSize: 16, height: 1.55),
           ),
 
           const SizedBox(height: 20),
 
-          // ------------------------------------------------------
-          // INFORMAÇÕES
-          // ------------------------------------------------------
+          // CONTADOR
           Row(
             children: [
-              Icon(
-                Icons.question_answer_outlined,
+              const Icon(
+                Icons.chat_bubble_outline,
                 size: 18,
-                color: tema.colorScheme.onSurfaceVariant,
+                color: _textoSecundario,
               ),
 
               const SizedBox(width: 6),
@@ -421,30 +423,28 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
                 '${_respostas.length} '
                 'resposta'
                 '${_respostas.length == 1 ? '' : 's'}',
-                style: TextStyle(
-                  color: tema.colorScheme.onSurfaceVariant,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: const TextStyle(color: _textoSecundario, fontSize: 13),
               ),
             ],
           ),
 
-          // ------------------------------------------------------
           // BOTÕES DO DONO
-          // ------------------------------------------------------
           if (_ehDono) ...[
-            const SizedBox(height: 22),
+            const SizedBox(height: 20),
 
-            Divider(color: tema.colorScheme.outlineVariant),
+            const Divider(color: _borda),
 
             const SizedBox(height: 14),
 
             Row(
               children: [
-                // EDITAR
                 Expanded(
                   child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _azul,
+                      side: const BorderSide(color: _borda),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                     onPressed: _editar,
                     icon: const Icon(Icons.edit_outlined),
                     label: const Text('Editar'),
@@ -453,9 +453,13 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
 
                 const SizedBox(width: 12),
 
-                // EXCLUIR
                 Expanded(
                   child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: _borda),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                     onPressed: _excluindo ? null : _excluir,
                     icon: _excluindo
                         ? const SizedBox(
@@ -482,7 +486,7 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   Widget _buildSeparador() {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Divider(height: 1),
+      child: Divider(color: _borda, height: 1),
     );
   }
 
@@ -491,19 +495,21 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   // ============================================================
 
   Widget _buildTituloRespostas() {
-    final tema = Theme.of(context);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          const Icon(Icons.forum_outlined),
+          const Icon(Icons.forum_outlined, color: _azul),
 
           const SizedBox(width: 10),
 
           const Text(
             'Respostas',
-            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: _texto,
+              fontSize: 21,
+              fontWeight: FontWeight.bold,
+            ),
           ),
 
           if (_respostas.isNotEmpty) ...[
@@ -512,14 +518,14 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
-                color: tema.colorScheme.primaryContainer,
+                color: _azul.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 '${_respostas.length}',
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: tema.colorScheme.onPrimaryContainer,
+                  color: _azul,
                 ),
               ),
             ),
@@ -537,7 +543,7 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
     if (_carregando) {
       return const Padding(
         padding: EdgeInsets.all(30),
-        child: Center(child: CircularProgressIndicator()),
+        child: Center(child: CircularProgressIndicator(color: _azul)),
       );
     }
 
@@ -557,37 +563,36 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   // ============================================================
 
   Widget _buildSemRespostas() {
-    final tema = Theme.of(context);
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(26),
       decoration: BoxDecoration(
-        color: tema.colorScheme.surfaceContainerLow,
+        color: _cardMaisEscuro,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borda),
       ),
-      child: Column(
+      child: const Column(
         children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 42,
-            color: tema.colorScheme.onSurfaceVariant,
-          ),
+          Icon(Icons.chat_bubble_outline, size: 42, color: _textoSecundario),
 
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
 
-          const Text(
+          Text(
             'Ainda não existem respostas.',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            style: TextStyle(
+              color: _texto,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
           ),
 
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
 
           Text(
             'Se você souber a resposta, '
             'seja o primeiro a ajudar.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: tema.colorScheme.onSurfaceVariant),
+            style: TextStyle(color: _textoSecundario),
           ),
         ],
       ),
@@ -599,34 +604,27 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   // ============================================================
 
   Widget _buildRespostaCard(Resposta resposta) {
-    final tema = Theme.of(context);
-
     final ehMinhaResposta = resposta.userId == widget.usuarioAtualId;
 
     return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+      margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: resposta.melhorResposta
-            ? tema.colorScheme.primaryContainer.withOpacity(0.35)
-            : tema.colorScheme.surfaceContainerLow,
+        color: _card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: resposta.melhorResposta
-              ? tema.colorScheme.primary
-              : tema.colorScheme.outlineVariant,
-        ),
+        border: Border.all(color: _borda),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: tema.colorScheme.secondaryContainer,
-            child: Icon(
-              Icons.person_outline,
-              color: tema.colorScheme.onSecondaryContainer,
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _azul.withOpacity(0.12),
             ),
+            child: const Icon(Icons.person_outline, color: _azul, size: 21),
           ),
 
           const SizedBox(width: 12),
@@ -635,62 +633,26 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        ehMinhaResposta
-                            ? 'Você'
-                            : 'Usuário #${resposta.userId}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-
-                    if (resposta.melhorResposta) _buildMelhorResposta(),
-                  ],
+                Text(
+                  ehMinhaResposta ? 'Você' : 'Usuário #${resposta.userId}',
+                  style: const TextStyle(
+                    color: _texto,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
 
                 const SizedBox(height: 9),
 
                 Text(
                   resposta.texto,
-                  style: const TextStyle(fontSize: 15, height: 1.5),
+                  style: const TextStyle(
+                    color: _texto,
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // MELHOR RESPOSTA
-  // ============================================================
-
-  Widget _buildMelhorResposta() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.check_circle, size: 14, color: Colors.green),
-
-          SizedBox(width: 4),
-
-          Text(
-            'Melhor resposta',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
             ),
           ),
         ],
@@ -703,28 +665,30 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
   // ============================================================
 
   Widget _buildCampoResposta() {
-    final tema = Theme.of(context);
-
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 12),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: tema.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: tema.colorScheme.outlineVariant),
+        color: _card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _borda),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.edit_outlined, size: 20),
+              Icon(Icons.edit_outlined, size: 20, color: _azul),
 
               SizedBox(width: 8),
 
               Text(
                 'Sua resposta',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: _texto,
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -736,9 +700,24 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
             minLines: 3,
             maxLines: 7,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
+            style: const TextStyle(color: _texto),
+            decoration: InputDecoration(
               hintText: 'Ajude respondendo essa pergunta...',
-              border: OutlineInputBorder(),
+              hintStyle: const TextStyle(color: _textoSecundario),
+              filled: true,
+              fillColor: _cardMaisEscuro,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: _borda),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: _borda),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: _azul, width: 1.5),
+              ),
               alignLabelWithHint: true,
             ),
           ),
@@ -748,12 +727,23 @@ class _PerguntaDetalhesScreenState extends State<PerguntaDetalhesScreen> {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: _azul,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
               onPressed: _enviandoResposta ? null : _responder,
               icon: _enviandoResposta
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.send_outlined),
               label: Text(
