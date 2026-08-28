@@ -24,6 +24,17 @@ class _BuscarScreenState extends State<BuscarScreen> {
 
   Usuario? _usuario;
 
+  // ============================================================
+  // MAPA DOS AUTORES
+  //
+  // chave = id do usuário
+  // valor = usuário
+  //
+  // Isso permite descobrir o verdadeiro autor de cada pergunta.
+  // ============================================================
+
+  final Map<int, Usuario> _autores = {};
+
   bool _carregando = true;
 
   static const Color _azul = Color(0xFF1677FF);
@@ -36,7 +47,6 @@ class _BuscarScreenState extends State<BuscarScreen> {
     super.initState();
 
     _buscarController.addListener(_filtrarPerguntas);
-
     _inicializar();
   }
 
@@ -56,6 +66,17 @@ class _BuscarScreenState extends State<BuscarScreen> {
     try {
       final usuario = await _authRepository.usuarioLogado();
       final perguntas = await _repository.listar();
+      final usuarios = await _authRepository.listarUsuarios();
+
+      // Monta o mapa:
+      //
+      // usuario.id -> usuario
+      //
+      final autores = <int, Usuario>{};
+
+      for (final usuario in usuarios) {
+        autores[usuario.id] = usuario;
+      }
 
       if (!mounted) {
         return;
@@ -63,8 +84,14 @@ class _BuscarScreenState extends State<BuscarScreen> {
 
       setState(() {
         _usuario = usuario;
+
         _perguntas = perguntas;
-        _resultados = perguntas;
+        _resultados = List<Pergunta>.from(perguntas);
+
+        _autores
+          ..clear()
+          ..addAll(autores);
+
         _carregando = false;
       });
     } catch (e) {
@@ -87,6 +114,13 @@ class _BuscarScreenState extends State<BuscarScreen> {
   Future<void> _carregarPerguntas() async {
     try {
       final perguntas = await _repository.listar();
+      final usuarios = await _authRepository.listarUsuarios();
+
+      final autores = <int, Usuario>{};
+
+      for (final usuario in usuarios) {
+        autores[usuario.id] = usuario;
+      }
 
       if (!mounted) {
         return;
@@ -94,6 +128,10 @@ class _BuscarScreenState extends State<BuscarScreen> {
 
       setState(() {
         _perguntas = perguntas;
+
+        _autores
+          ..clear()
+          ..addAll(autores);
       });
 
       _filtrarPerguntas();
@@ -234,13 +272,9 @@ class _BuscarScreenState extends State<BuscarScreen> {
         padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 30),
         children: [
           _buildCampoBusca(),
-
           const SizedBox(height: 20),
-
           _buildTituloResultados(),
-
           const SizedBox(height: 10),
-
           _buildResultados(),
         ],
       ),
@@ -300,9 +334,7 @@ class _BuscarScreenState extends State<BuscarScreen> {
       child: Row(
         children: [
           const Icon(Icons.forum_outlined, size: 20, color: _azul),
-
           const SizedBox(width: 8),
-
           Expanded(
             child: Text(
               buscando ? 'Resultados' : 'Perguntas recentes',
@@ -313,7 +345,6 @@ class _BuscarScreenState extends State<BuscarScreen> {
               ),
             ),
           ),
-
           if (_resultados.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -345,10 +376,20 @@ class _BuscarScreenState extends State<BuscarScreen> {
     }
 
     return Column(
-      children: _resultados.map((pergunta) {
+      children: _resultados.map<Widget>((pergunta) {
+        // ======================================================
+        // AQUI ESTÁ A CORREÇÃO
+        //
+        // O autor NÃO é o usuário atualmente logado.
+        //
+        // O autor é encontrado pelo userId salvo na pergunta.
+        // ======================================================
+
+        final autor = _autores[pergunta.userId];
+
         return PerguntaCard(
           pergunta: pergunta,
-          usuario: _usuario,
+          autor: autor,
           onTap: () => _abrirPergunta(pergunta),
         );
       }).toList(),
@@ -373,9 +414,7 @@ class _BuscarScreenState extends State<BuscarScreen> {
       child: Column(
         children: [
           const Icon(Icons.search_off, size: 46, color: Color(0xFF666666)),
-
           const SizedBox(height: 14),
-
           Text(
             buscando ? 'Nenhuma pergunta encontrada' : 'Nenhuma pergunta ainda',
             textAlign: TextAlign.center,
@@ -385,9 +424,7 @@ class _BuscarScreenState extends State<BuscarScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-
           const SizedBox(height: 7),
-
           Text(
             buscando
                 ? 'Tente buscar por outro termo.'

@@ -81,4 +81,8 @@ class AuthRepository {
   Future<void> logout() async {
     await _storage.logout();
   }
+
+  Future<Usuario?> buscarUsuarioPorId(int id) async {
+    return _storage.buscarPorId(id);
+  }
 }

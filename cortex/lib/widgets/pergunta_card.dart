@@ -5,13 +5,13 @@ import '../models/usuario.dart';
 
 class PerguntaCard extends StatelessWidget {
   final Pergunta pergunta;
-  final Usuario? usuario;
+  final Usuario? autor;
   final VoidCallback onTap;
 
   const PerguntaCard({
     super.key,
     required this.pergunta,
-    required this.usuario,
+    required this.autor,
     required this.onTap,
   });
 
@@ -29,7 +29,7 @@ class PerguntaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final nomeUsuario = usuario?.nome ?? 'Usuário';
+    final nomeUsuario = autor?.nome ?? 'Usuário';
 
     return Material(
       color: _fundo,
@@ -192,7 +192,7 @@ class PerguntaCard extends StatelessWidget {
   // ============================================================
 
   Widget _buildAvatar() {
-    final foto = usuario?.foto;
+    final foto = autor?.foto;
 
     // Se futuramente existir uma foto cadastrada
     if (foto != null && foto.trim().isNotEmpty) {

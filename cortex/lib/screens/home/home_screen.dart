@@ -68,6 +68,15 @@ class _FeedContentState extends State<FeedContent> {
   final AuthRepository _authRepository = AuthRepository();
 
   List<Pergunta> _perguntas = [];
+
+  // ==========================================================
+  // MAPA DOS AUTORES
+  // chave = ID do usuário
+  // valor = usuário
+  // ==========================================================
+
+  final Map<int, Usuario> _autores = {};
+
   Usuario? _usuario;
 
   bool _carregando = true;
@@ -78,11 +87,7 @@ class _FeedContentState extends State<FeedContent> {
 
   static const Color _fundo = Color(0xFF000000);
   static const Color _fundoCard = Color(0xFF111111);
-  static const Color _fundoCardSecundario = Color(0xFF181818);
-
   static const Color _azul = Color(0xFF1D9BF0);
-  static const Color _azulClaro = Color(0xFF4DB3F5);
-
   static const Color _textoPrincipal = Color(0xFFF5F5F5);
   static const Color _textoSecundario = Color(0xFF8E8E93);
   static const Color _divisor = Color(0xFF262626);
@@ -135,12 +140,33 @@ class _FeedContentState extends State<FeedContent> {
     try {
       final perguntas = await _repository.listar();
 
+      // Busca todos os usuários cadastrados.
+      final usuarios = await _authRepository.listarUsuarios();
+
+      // Cria o mapa:
+      //
+      // ID DO USUÁRIO -> USUÁRIO
+      //
+      // Assim podemos encontrar o verdadeiro autor
+      // através do pergunta.userId.
+
+      final autores = <int, Usuario>{};
+
+      for (final usuario in usuarios) {
+        autores[usuario.id] = usuario;
+      }
+
       if (!mounted) {
         return;
       }
 
       setState(() {
         _perguntas = perguntas;
+
+        _autores
+          ..clear()
+          ..addAll(autores);
+
         _carregando = false;
       });
     } catch (e) {
@@ -186,6 +212,7 @@ class _FeedContentState extends State<FeedContent> {
   Future<void> _abrirPergunta(Pergunta pergunta) async {
     if (_usuario == null) {
       _mostrarMensagem('Nenhum usuário está logado.');
+
       return;
     }
 
@@ -272,7 +299,6 @@ class _FeedContentState extends State<FeedContent> {
         backgroundColor: _fundo,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-
         centerTitle: true,
 
         title: const Text(
@@ -285,9 +311,9 @@ class _FeedContentState extends State<FeedContent> {
           ),
         ),
 
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: _divisor),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: SizedBox(height: 1, child: ColoredBox(color: _divisor)),
         ),
       ),
 
@@ -298,16 +324,11 @@ class _FeedContentState extends State<FeedContent> {
       // ========================================================
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _abrirNovaPergunta,
-
         backgroundColor: _azul,
         foregroundColor: Colors.white,
-
         elevation: 8,
-
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-
         icon: const Icon(Icons.add, size: 24),
-
         label: const Text(
           'Perguntar',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
@@ -332,10 +353,8 @@ class _FeedContentState extends State<FeedContent> {
         color: _azul,
         backgroundColor: _fundoCard,
         onRefresh: _carregarPerguntas,
-
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-
           children: const [
             SizedBox(height: 170),
 
@@ -374,16 +393,11 @@ class _FeedContentState extends State<FeedContent> {
     return RefreshIndicator(
       color: _azul,
       backgroundColor: _fundoCard,
-
       onRefresh: _carregarPerguntas,
-
       child: ListView.builder(
         padding: const EdgeInsets.only(top: 0, bottom: 100),
-
         physics: const AlwaysScrollableScrollPhysics(),
-
         itemCount: _perguntas.length,
-
         itemBuilder: (context, index) {
           final pergunta = _perguntas[index];
 
@@ -398,18 +412,38 @@ class _FeedContentState extends State<FeedContent> {
   // ============================================================
 
   Widget _buildPerguntaItem(Pergunta pergunta) {
+    // ==========================================================
+    // IMPORTANTE
+    //
+    // NÃO usamos mais:
+    //
+    // usuario: _usuario
+    //
+    // porque isso fazia todas as perguntas aparecerem
+    // como se fossem do usuário atualmente logado.
+    //
+    // Agora usamos o ID salvo na própria pergunta.
+    // ==========================================================
+
+    final autor = _autores[pergunta.userId];
+
     return Container(
       decoration: const BoxDecoration(
         color: _fundoCard,
         border: Border(bottom: BorderSide(color: _divisor, width: 0.8)),
       ),
-
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-
         child: PerguntaCard(
           pergunta: pergunta,
-          usuario: _usuario!,
+
+          // ====================================================
+          // CORREÇÃO PRINCIPAL
+          //
+          // PerguntaCard exige "autor", não "usuario".
+          // ====================================================
+          autor: autor,
+
           onTap: () => _abrirPergunta(pergunta),
         ),
       ),

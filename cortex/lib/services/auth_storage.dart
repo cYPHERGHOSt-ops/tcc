@@ -82,4 +82,16 @@ class AuthStorage {
 
     print('DADOS DO APP APAGADOS!');
   }
+
+  Future<Usuario?> buscarPorId(int id) async {
+    final usuarios = await listarUsuarios();
+
+    for (final usuario in usuarios) {
+      if (usuario.id == id) {
+        return usuario;
+      }
+    }
+
+    return null;
+  }
 }
