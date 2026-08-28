@@ -13,12 +13,12 @@ class EditarPerguntaScreen extends StatefulWidget {
 }
 
 class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
+  final PerguntaRepository _repository = PerguntaRepository();
+
   final _formKey = GlobalKey<FormState>();
 
-  final _tituloController = TextEditingController();
-  final _descricaoController = TextEditingController();
-
-  final PerguntaRepository _repository = PerguntaRepository();
+  late final TextEditingController _tituloController;
+  late final TextEditingController _descricaoController;
 
   bool _salvando = false;
 
@@ -26,8 +26,11 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
   void initState() {
     super.initState();
 
-    _tituloController.text = widget.pergunta.titulo;
-    _descricaoController.text = widget.pergunta.descricao;
+    _tituloController = TextEditingController(text: widget.pergunta.titulo);
+
+    _descricaoController = TextEditingController(
+      text: widget.pergunta.descricao,
+    );
   }
 
   @override
@@ -38,16 +41,13 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
     super.dispose();
   }
 
-  // ============================================================
-  // SALVAR ALTERAÇÕES
-  // ============================================================
-
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     if (widget.pergunta.id == null) {
+      _mostrarMensagem('Erro: essa pergunta não possui ID.');
       return;
     }
 
@@ -58,17 +58,15 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
     try {
       final perguntaAtualizada = Pergunta(
         id: widget.pergunta.id,
-
-        // IMPORTANTE:
-        // mantém o dono original da pergunta.
         userId: widget.pergunta.userId,
-
         titulo: _tituloController.text.trim(),
         descricao: _descricaoController.text.trim(),
-
-        // Mantém a matéria caso exista.
         materiaId: widget.pergunta.materiaId,
       );
+
+      debugPrint('EDITANDO PERGUNTA ID: ${perguntaAtualizada.id}');
+
+      debugPrint('NOVO TITULO: ${perguntaAtualizada.titulo}');
 
       await _repository.editar(perguntaAtualizada);
 
@@ -76,8 +74,18 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
         return;
       }
 
+      _mostrarMensagem('Pergunta alterada com sucesso!');
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) {
+        return;
+      }
+
       Navigator.pop(context, perguntaAtualizada);
     } catch (e) {
+      debugPrint('ERRO AO EDITAR PERGUNTA: $e');
+
       if (!mounted) {
         return;
       }
@@ -86,15 +94,15 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
         _salvando = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Não foi possível salvar as alterações.')),
-      );
+      _mostrarMensagem('Erro ao alterar pergunta: $e');
     }
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
+  void _mostrarMensagem(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,9 +121,9 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
           padding: const EdgeInsets.all(16),
 
           children: [
-            // ====================================================
+            // ==================================================
             // TÍTULO
-            // ====================================================
+            // ==================================================
 
             TextFormField(
               controller: _tituloController,
@@ -124,7 +132,7 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
 
               decoration: const InputDecoration(
                 labelText: 'Título',
-                hintText: 'Digite o título da pergunta',
+                hintText: 'Digite o título',
                 prefixIcon: Icon(Icons.title_outlined),
                 border: OutlineInputBorder(),
               ),
@@ -133,7 +141,7 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
 
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Digite o título da pergunta.';
+                  return 'Digite o título.';
                 }
 
                 return null;
@@ -142,9 +150,9 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
 
             const SizedBox(height: 16),
 
-            // ====================================================
+            // ==================================================
             // DESCRIÇÃO
-            // ====================================================
+            // ==================================================
             TextFormField(
               controller: _descricaoController,
 
@@ -163,7 +171,7 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
 
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Digite a descrição da pergunta.';
+                  return 'Digite a descrição.';
                 }
 
                 return null;
@@ -172,11 +180,11 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
 
             const SizedBox(height: 24),
 
-            // ====================================================
-            // BOTÃO SALVAR
-            // ====================================================
+            // ==================================================
+            // BOTÃO
+            // ==================================================
             SizedBox(
-              height: 50,
+              height: 52,
 
               child: FilledButton.icon(
                 onPressed: _salvando ? null : _salvar,
@@ -185,7 +193,6 @@ class _EditarPerguntaScreenState extends State<EditarPerguntaScreen> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.save_outlined),

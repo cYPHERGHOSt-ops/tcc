@@ -75,4 +75,11 @@ class AuthStorage {
 
     await preferences.remove(_chaveUsuarioLogado);
   }
+
+  Future<void> limparDados() async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.clear();
+
+    print('DADOS DO APP APAGADOS!');
+  }
 }

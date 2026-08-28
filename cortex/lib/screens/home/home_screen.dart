@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 
+import 'package:cortex/widgets/bottom_navegation.dart';
+
+import '../buscar/buscar_screen.dart';
+import '../conta/conta_screen.dart';
+import '../perguntas/nova_pergunta_screen.dart';
+import '../perguntas/pergunta_detalhes_screen.dart';
+
 import '../../models/pergunta.dart';
 import '../../models/usuario.dart';
 
 import '../../repositories/auth_repository.dart';
 import '../../repositories/pergunta_repository.dart';
 
-import '../../widgets/bottom_navegation.dart';
 import '../../widgets/pergunta_card.dart';
-
-import '../buscar/buscar_screen.dart';
-import '../conta/conta_screen.dart';
-import '../perguntas/nova_pergunta_screen.dart';
-import '../perguntas/pergunta_detalhes_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onLogout;
@@ -81,17 +82,29 @@ class _FeedContentState extends State<FeedContent> {
   // ============================================================
 
   Future<void> _inicializar() async {
-    final usuario = await _authRepository.usuarioLogado();
+    try {
+      final usuario = await _authRepository.usuarioLogado();
 
-    if (!mounted) {
-      return;
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _usuario = usuario;
+      });
+
+      await _carregarPerguntas();
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _carregando = false;
+      });
+
+      _mostrarMensagem('Não foi possível inicializar o feed.');
     }
-
-    setState(() {
-      _usuario = usuario;
-    });
-
-    await _carregarPerguntas();
   }
 
   // ============================================================
@@ -119,11 +132,7 @@ class _FeedContentState extends State<FeedContent> {
         _carregando = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível carregar as perguntas.'),
-        ),
-      );
+      _mostrarMensagem('Não foi possível carregar as perguntas.');
     }
   }
 
@@ -141,17 +150,22 @@ class _FeedContentState extends State<FeedContent> {
       ),
     );
 
+    if (!mounted) {
+      return;
+    }
+
     if (resultado == true) {
       await _carregarPerguntas();
     }
   }
 
   // ============================================================
-  // ABRIR DETALHES
+  // ABRIR PERGUNTA
   // ============================================================
 
   Future<void> _abrirPergunta(Pergunta pergunta) async {
     if (_usuario == null) {
+      _mostrarMensagem('Nenhum usuário está logado.');
       return;
     }
 
@@ -167,10 +181,50 @@ class _FeedContentState extends State<FeedContent> {
       ),
     );
 
-    // Se editou ou excluiu, atualiza o feed.
-    if (resultado != null) {
+    if (!mounted) {
+      return;
+    }
+
+    // ==========================================================
+    // PERGUNTA EXCLUÍDA
+    // ==========================================================
+
+    if (resultado == true) {
+      await _carregarPerguntas();
+      return;
+    }
+
+    // ==========================================================
+    // PERGUNTA EDITADA
+    // ==========================================================
+
+    if (resultado is Pergunta) {
+      setState(() {
+        final index = _perguntas.indexWhere((item) => item.id == resultado.id);
+
+        if (index != -1) {
+          _perguntas[index] = resultado;
+        }
+      });
+
+      // Recarrega do SharedPreferences para garantir
+      // que a interface esteja sincronizada com os dados salvos.
       await _carregarPerguntas();
     }
+  }
+
+  // ============================================================
+  // MENSAGEM
+  // ============================================================
+
+  void _mostrarMensagem(String mensagem) {
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem), behavior: SnackBarBehavior.floating),
+    );
   }
 
   // ============================================================
@@ -186,12 +240,9 @@ class _FeedContentState extends State<FeedContent> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-
       body: _buildBody(),
-
       floatingActionButton: FloatingActionButton(
         onPressed: _abrirNovaPergunta,
-        tooltip: 'Nova pergunta',
         child: const Icon(Icons.add),
       ),
     );
@@ -210,6 +261,7 @@ class _FeedContentState extends State<FeedContent> {
       return RefreshIndicator(
         onRefresh: _carregarPerguntas,
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: const [
             SizedBox(height: 250),
             Center(
@@ -227,16 +279,14 @@ class _FeedContentState extends State<FeedContent> {
       onRefresh: _carregarPerguntas,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 10),
+        physics: const AlwaysScrollableScrollPhysics(),
         itemCount: _perguntas.length,
         itemBuilder: (context, index) {
           final pergunta = _perguntas[index];
 
-          return GestureDetector(
+          return PerguntaCard(
+            pergunta: pergunta,
             onTap: () => _abrirPergunta(pergunta),
-            child: PerguntaCard(
-              pergunta: pergunta,
-              usuarioAtualId: _usuario!.id,
-            ),
           );
         },
       ),

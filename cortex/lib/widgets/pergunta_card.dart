@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../models/pergunta.dart';
-import '../screens/perguntas/pergunta_detalhes_screen.dart';
 
 class PerguntaCard extends StatelessWidget {
   final Pergunta pergunta;
-  final int usuarioAtualId;
+  final VoidCallback onTap;
 
-  const PerguntaCard({
-    super.key,
-    required this.pergunta,
-    required this.usuarioAtualId,
-  });
+  const PerguntaCard({super.key, required this.pergunta, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -19,19 +14,7 @@ class PerguntaCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) {
-                return PerguntaDetalhesScreen(
-                  pergunta: pergunta,
-                  usuarioAtualId: usuarioAtualId,
-                );
-              },
-            ),
-          );
-        },
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -44,24 +27,18 @@ class PerguntaCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               Text(
                 pergunta.descricao,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-
               const SizedBox(height: 12),
-
-              Row(
+              const Row(
                 children: [
-                  const Icon(Icons.chat_bubble_outline, size: 18),
-
-                  const SizedBox(width: 6),
-
-                  const Text('Responder'),
+                  Icon(Icons.chat_bubble_outline, size: 18),
+                  SizedBox(width: 6),
+                  Text('Responder'),
                 ],
               ),
             ],
